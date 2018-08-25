@@ -15,12 +15,16 @@ S3_BUCKET=${HEROKU_GEO_BUILDBACK_S3_BUCKET:-"heroku-buildpack-geo"}
 
 # Parameters
 BUILD_DIR=$1
+BP_DIR=$(cd $(dirname ${0:-}); cd ..; pwd)
 CACHE_DIR="${2}/${STACK}"
 BP_DIR=$(cd $(dirname ${0:-}); cd ..; pwd)
 
 # Setup profile file
 PROFILE_PATH="$BUILD_DIR/.profile.d/geo.sh"
 mkdir -p $(dirname $PROFILE_PATH)
+
+# Set up exports file
+EXPORTS_PATH="$BP_DIR/export"
 
 # Functions
 function indent() {
@@ -51,6 +55,11 @@ function set-env (){
 
 function set-default-env (){
   echo "export $1=\${$1:-$2}" >> $PROFILE_PATH
+}
+
+function set-export (){
+  echo "export $1=$2"
+  echo "export $1=$2" >> $EXPORTS_PATH
 }
 
 # Retrieve versions
@@ -97,21 +106,31 @@ for dir in $VENDORED_GEOS $VENDORED_GDAL $VENDORED_PROJ; do
 done
 
 # App directories
-APP_VENDOR="/app/$TARGET_VENDOR_DIR"
+APP_VENDOR_RUNTIME="$\HOME/$TARGET_VENDOR_DIR"
+APP_VENDOR_BUILD="$BUILD_DIR/$TARGET_VENDOR_DIR"
 
-# Setup environment variables
-set-env GEOS_LIBRARY_PATH "$APP_VENDOR/lib"
-set-env GDAL_LIBRARY_PATH "$APP_VENDOR/lib/libgdal.so"
-set-env PROJ4_LIBRARY_PATH "$APP_VENDOR/lib"
-set-env GDAL_DATA "$APP_VENDOR/share/gdal"
+# Setup environment variables needed to run the app
+set-env GEOS_LIBRARY_PATH "$APP_VENDOR_RUNTIME/lib/libgeos_c.so"
+set-env GDAL_LIBRARY_PATH "$APP_VENDOR_RUNTIME/lib/libgdal.so"
+set-env PROJ4_LIBRARY_PATH "$APP_VENDOR_RUNTIME/lib"
+set-env GDAL_DATA "$APP_VENDOR_RUNTIME/share/gdal"
+set-default-env LIBRARY_PATH "$APP_VENDOR_RUNTIME/lib"
+set-default-env LD_LIBRARY_PATH "$APP_VENDOR_RUNTIME/lib"
+set-default-env CPATH "$APP_VENDOR_RUNTIME/include"
+set-default-env PATH "$APP_VENDOR_RUNTIME/bin"
 
+# Copy libjasper since it's only available in heroku buildenv
+cp /usr/lib/x86_64-linux-gnu/libjasper.so* "$BUILD_DIR/$TARGET_VENDOR_DIR/lib/."
 
-# Export env var for next build
-echo "BUNDLE_BUILD__RGEO=\"--with-opt-dir=$BUILD_DIR/$TARGET_VENDOR_DIR --with-geos-config=$BUILD_DIR/$TARGET_VENDOR_DIR/bin/geos-config\"" >> $BP_DIR/export
-set-default-env BUNDLE_BUILD__RGEO "--with-opt-dir=$TARGET_VENDOR_DIR --with-geos-config=$TARGET_VENDOR_DIR/bin/geos-config"
-set-default-env LIBRARY_PATH "$APP_VENDOR/lib"
-set-default-env LD_LIBRARY_PATH "$APP_VENDOR/lib"
-set-default-env CPATH "$APP_VENDOR/include"
-set-default-env PATH "$APP_VENDOR/bin"
+# Set up environment variables needed during the remainder of
+# the build process.. These can be read by subsequent buildpacks
+set-export GEOS_LIBRARY_PATH "$APP_VENDOR_BUILD/lib/libgeos_c.so"
+set-export GDAL_LIBRARY_PATH "$APP_VENDOR_BUILD/lib/libgdal.so"
+set-export PROJ4_LIBRARY_PATH "$APP_VENDOR_BUILD/lib"
+set-export GDAL_DATA "$APP_VENDOR_BUILD/share/gdal"
+set-export LIBRARY_PATH "$APP_VENDOR_BUILD/lib"
+set-export LD_LIBRARY_PATH "$APP_VENDOR_BUILD/lib"
+set-export CPATH "$APP_VENDOR_BUILD/include"
+set-export PATH "$APP_VENDOR_BUILD/bin:\$PATH"
 
 echo "-----> Vendoring geo libraries done"

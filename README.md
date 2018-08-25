@@ -12,7 +12,7 @@ Usage
 Example usage:
 
 ```
-$ heroku buildpacks:set https://github.com/cyberdelia/heroku-geo-buildpack.git
+$ heroku buildpacks:set https://github.com/dschep/heroku-geo-buildpack.git
 $ heroku buildpacks:add heroku/ruby
 ```
 
@@ -22,7 +22,7 @@ the language buildpacks.
 ```
 $ heroku buildpacks
 === sushi Buildpack URLs
-1. https://github.com/cyberdelia/heroku-geo-buildpack.git
+1. https://github.com/dschep/heroku-geo-buildpack.git
 2. heroku/ruby
 ```
 
@@ -46,3 +46,6 @@ For rgeo:
 >>> RGeo::Geos.supported?
 => true
 ```
+
+Forked from [cyberdelia/heroku-geo-buildpack](https://github.com/cyberdelia/heroku-geo-buildpack) to
+fix libjasper & make env vars more specific
