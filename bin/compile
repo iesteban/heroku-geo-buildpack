@@ -106,7 +106,7 @@ for dir in $VENDORED_GEOS $VENDORED_GDAL $VENDORED_PROJ; do
 done
 
 # App directories
-APP_VENDOR_RUNTIME="$\HOME/$TARGET_VENDOR_DIR"
+APP_VENDOR_RUNTIME="$HOME/$TARGET_VENDOR_DIR"
 APP_VENDOR_BUILD="$BUILD_DIR/$TARGET_VENDOR_DIR"
 
 # Setup environment variables needed to run the app
